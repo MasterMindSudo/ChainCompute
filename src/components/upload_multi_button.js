@@ -1,8 +1,8 @@
 import React from 'react';
 import 'antd/dist/antd.css';
-import { Upload, Icon, Button, Modal, Input, List, Form, Tabs, Progress, InputNumber } from 'antd';
-
-
+import { Upload, Icon, Button, Modal, Input, List, Form, Tabs, Progress, InputNumber,message } from 'antd';
+import reqwest from 'reqwest';
+import axios, { post } from 'axios';
 // Dragger
 
 const { Dragger } = Upload;
@@ -10,7 +10,7 @@ const { Dragger } = Upload;
 const props = {
   name: 'file',
   multiple: true,
-  action: 'https://www.mocky.io/v2/5cc8019d300000980a055e76',
+  action: 'http://10.6.71.79:8074/v1/un/upload/file',
   onChange(info) {
     const { status } = info.file;
     if (status !== 'uploading') {
@@ -30,50 +30,48 @@ const props = {
 // TabPane // 
 
 const { TabPane } = Tabs;
-const UPLOAD_NODE = "http://10.6.71.79:8074/v1/un/upload/file"
-
-function* uploadFile(action) {  
-  const { file } = action;  
-  const formData = new FormData();  
-  formData.append('file', file);  
-  formData.append('expire_days', '-1');  
-
-
-  const options = {  
-    method: 'POST',  
-    body: formData,  
-  };  
-  const res = yield request(`${UPLOAD_NODE}/v1/un/upload/file`, options);  
-  if (res.status === 1) {  
-    yield put(uploadFileSuccess());  
-    yield put(updateDocument(file.name, res.afid));  
-    return file.name,res.afid
-  }  
-}
-
-// 
+const UPLOAD_NODE = "http://10.6.71.79:8074/"
 
 class Upload_multi_button extends React.Component {
 
   // Modal 
 
-  handleSubmit = e => {
-    e.preventDefault();
-    this.props.form.validateFields((err, values) => {
-      if (!err) {
-        console.log('Received values of form: ', values);
-      }
-    });
-  };
-  normFile = e => {
-    console.log('Upload event:', e);
-    if (Array.isArray(e)) {
-      return e;
-    }
-    return e && e.fileList;
+  state = {
+    fileList: [],
+    uploading: false,
+    visible: false ,
   };
 
-  state = { visible: false };
+  handleUpload = () => {
+    const { fileList } = this.state;
+    
+    fileList.forEach(file => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append("expire_days", "5");
+      fetch('http://10.6.71.79:8074/v1/un/upload/file',{
+        
+        method: 'POST',
+        // processData: false,
+        body: formData,
+        //headers:{}
+      }).then(res => {
+        console.log(res)
+      });
+    });
+    this.setState({
+      fileList: [],
+      uploading: false,
+    });
+    this.setState({
+      uploading: true,
+    });
+
+    // You can use any AJAX library you like
+
+  };
+
+  
 
   showModal = () => {
     this.setState({
@@ -103,13 +101,34 @@ class Upload_multi_button extends React.Component {
 
   // 
 
-  
+
+
   render() {
     const { getFieldDecorator } = this.props.form;
+
+    const { uploading, fileList } = this.state;
+    const props = {
+      onRemove: file => {
+        this.setState(state => {
+          const index = state.fileList.indexOf(file);
+          const newFileList = state.fileList.slice();
+          newFileList.splice(index, 1);
+          return {
+            fileList: newFileList,
+          };
+        });
+      },
+      beforeUpload: file => {
+        this.setState(state => ({
+          fileList: [...state.fileList, file],
+        }));
+        return false;
+      },
+      fileList,
+    };
     return (
 
       <span>
-
         <Button onClick={this.showModal}><Icon type="upload" /></Button>
         <Modal
           visible={this.state.visible}
@@ -146,16 +165,24 @@ class Upload_multi_button extends React.Component {
                   <span className="ant-form-text"> Tokens</span>
                 </Form.Item>
                 <Form.Item label="Data Upload" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
-                  {getFieldDecorator('upload', {
-                    valuePropName: 'fileList',
-                    getValueFromEvent: this.normFile,
-                  })(
-                    <Upload name="logo" customaction={uploadFile(this.normFile)} listType="picture">
+                  <div>
+                    <Upload {...props}>
                       <Button>
-                        <Icon type="upload" /> Click to upload
-              </Button>
-                    </Upload>,
-                  )}
+                        <Icon type="upload" /> Select File
+                      </Button>
+                    </Upload>
+                    <Button
+                      type="primary"
+                      onClick={this.handleUpload}
+                      disabled={fileList.length === 0}
+                      loading={uploading}
+                      style={{ marginTop: 16 }}
+                    >
+                      {uploading ? 'Uploading' : 'Start Upload'}
+                    </Button>
+                  </div>
+
+
                 </Form.Item>
 
               </Form>

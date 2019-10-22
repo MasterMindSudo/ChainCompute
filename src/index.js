@@ -10,15 +10,15 @@ import * as serviceWorker from './serviceWorker';
 ReactDOM.render(<App />, document.getElementById('root'));
 
 // Uncomment this to build the App to Chain Market //
-// App ID = a1234567
-// window.a1234567 = {
-//     mount: () => {
-//         const el = document.getElementById('a1234567');
-//         ReactDOM.render(<App />, el);
-//     },
-//     unmount: () => {
-//         const el = document.getElementById('a1234567');
-//         ReactDOM.unmountComponentAtNode(el);
-//     }
-// }
-// serviceWorker.unregister();
+//  App_ID = a1234567
+//  window.a1234567 = {
+//      mount: () => {
+//          const el = document.getElementById('a1234567');
+//          ReactDOM.render(<App />, el);
+//      },
+//      unmount: () => {
+//          const el = document.getElementById('a1234567');
+//          ReactDOM.unmountComponentAtNode(el);
+//      }
+//  }
+//  serviceWorker.unregister();
