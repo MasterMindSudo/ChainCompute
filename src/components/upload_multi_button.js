@@ -1,8 +1,9 @@
 import React from 'react';
 import 'antd/dist/antd.css';
-import { Upload, Icon, Button, Modal, Input, List, Form, Tabs, Progress, InputNumber,message } from 'antd';
+import { Upload, Icon, Button, Modal, Input, List, Form, Tabs, Progress, InputNumber, message, Select } from 'antd';
 import reqwest from 'reqwest';
 import axios, { post } from 'axios';
+import { resetWarningCache } from 'prop-types';
 // Dragger
 
 const { Dragger } = Upload;
@@ -30,7 +31,11 @@ const props = {
 // TabPane // 
 
 const { TabPane } = Tabs;
+const { Option } = Select;
 const UPLOAD_NODE = "http://10.6.71.79:8074/"
+
+
+
 
 class Upload_multi_button extends React.Component {
 
@@ -39,40 +44,96 @@ class Upload_multi_button extends React.Component {
   state = {
     fileList: [],
     uploading: false,
-    visible: false ,
+    visible: false,
+    afidList: [],
+    OSdisable: true,
+    ARCHdisable: true,
+    OS: '',
+    Arch: '',
   };
+  ADCaddress = '12kcGKwLvxbhz2V1LSjbw3dTD6PhW4DuWM'
+  
+  task = {
+    address: '12kcGKwLvxbhz2V1LSjbw3dTD6PhW4DuWM',
+    name: 'pwl_test7',
+    script: '1e0000000000051b050193d83f70f95c5ec97522dc04f72fd31042cf0799ac519ceac9c1f97e5f3ed60dca85fa1a7c76900191ea5091bd1e6050b21e63c41244',
+    bounty: 200,
+    taskTime: 60,
+    numRequired: 1,
+    os: 'linux',
+    arch: 'amd64',
+  }
+  handleChangeArch = (value) => {
+    console.log(`selected ${value}`);
+    this.setState({
+      Arch: value
+    })
+  }
+
+  handleChangeOS = (value) => {
+    console.log(`selected ${value}`);
+    this.setState({
+      OS: value
+    })
+  }
+  handleChangeMod = (value) => {
+    console.log(`selected ${value}`);
+    if (value == 'Custom') {
+      console.log("disabled select")
+      this.setState({
+        OSdisable: false,
+        ARCHdisable: false,
+
+
+      })
+
+    } else {
+      console.log("disabled select")
+      this.setState({
+        OSdisable: true,
+        ARCHdisable: true,
+        OS: 'linux',
+        Arch: 'amd64'
+      })
+    }
+  }
 
   handleUpload = () => {
     const { fileList } = this.state;
-    
+
+
     fileList.forEach(file => {
       const formData = new FormData();
       formData.append('file', file);
       formData.append("expire_days", "5");
-      fetch('http://10.6.71.79:8074/v1/un/upload/file',{
-        
+      this.setState({
+        uploading: true,
+      });
+      fetch('http://10.6.71.79:8074/v1/un/upload/file', {
+
         method: 'POST',
         // processData: false,
         body: formData,
         //headers:{}
-      }).then(res => {
-        console.log(res)
+
+      }).then(res => res.json()).then(response => {
+        console.log(response)
+        console.log(response.status);
+        if (response.status == 1) {
+          this.setState({
+            afidList: this.state.afidList.concat(response.afid)
+          })
+          console.log(this.state.afidList)
+        }
+
+
       });
     });
     this.setState({
       fileList: [],
       uploading: false,
     });
-    this.setState({
-      uploading: true,
-    });
-
-    // You can use any AJAX library you like
-
   };
-
-  
-
   showModal = () => {
     this.setState({
       visible: true,
@@ -83,6 +144,14 @@ class Upload_multi_button extends React.Component {
     this.setState({
       visible: false,
     });
+    console.log(JSON.stringify(this.task))
+    fetch("http://10.6.71.143:7001/contract/computation", {
+      method: 'POST',
+      body: JSON.stringify(this.task),
+    }).then(res=>res.json()).then(response =>{
+      console.log(response)
+    })
+
   };
 
   handleCancel = e => {
@@ -181,8 +250,40 @@ class Upload_multi_button extends React.Component {
                       {uploading ? 'Uploading' : 'Start Upload'}
                     </Button>
                   </div>
+                </Form.Item>
+                <Form.Item label="Task Workers Number(1-10)" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
 
+                  {getFieldDecorator('input-worker', { initialValue: 1 })(<InputNumber min={1} max={10} />)}
+                  <span className="ant-form-text"> Workers</span>
+                </Form.Item>
+                <Form.Item label="Modules" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
+                  <div>
+                    <Select defaultValue="Transcoding Videos" style={{ width: 120 }} onChange={this.handleChangeMod} >
+                      <Option value="Transcoding Videos">Transcoding</Option>
+                      <Option value="Custom">Custom</Option>
+                    </Select>
+                  </div>
+                </Form.Item>
+                <Form.Item label="Target Architecture" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
+                  <div>
 
+                    <Select defaultValue="amd64" style={{ width: 120 }} onChange={this.handleChangeArch} disabled={this.state.ARCHdisable}>
+                      <Option value="amd64">amd64</Option>
+                      <Option value="x86">x86</Option>
+                      <Option value="arm32">arm32</Option>
+                      <Option value="arm64">arm64</Option>
+                    </Select>
+
+                  </div>
+                </Form.Item>
+                <Form.Item label="Target OS" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }}>
+                  <div>
+                    <Select defaultValue="linux" style={{ width: 120 }} onChange={this.handleChangeOS} disabled={this.state.OSdisable}>
+                      <Option value="linux">linux</Option>
+                      <Option value="windows">windows</Option>
+                      <Option value="macos">macos</Option>
+                    </Select>
+                  </div>
                 </Form.Item>
 
               </Form>
